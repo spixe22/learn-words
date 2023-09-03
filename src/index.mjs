@@ -13,23 +13,29 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import readline from 'readline';
+import translate from "translate";
+
+import { random } from './utils.mjs';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 const rootDir = join(__dirname, '..');
 
-const words = readFileSync(join(rootDir, 'words.txt'), 'utf8')
 
-const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const loadWords = () => readFileSync(join(rootDir, 'words.txt'), 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((word) => word.split('-')[0].trim());
+
+const wordsList = loadWords();
+
+const translateStore = new Map();
+
 
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
 
-const wordsList = words.split('\n').filter(Boolean).map((word) => {
-    const [en, ru] = word.split(' - ');
-    return { en, ru };
-});
 
 const getRandomWord = () => wordsList[random(0, wordsList.length - 1)];
 
@@ -42,11 +48,18 @@ const askQuestion = (question, type) => new Promise((resolve) => {
 
 const quiz = async () => {
   const word = getRandomWord();
+  if (!translateStore.has(word)) {
+    translateStore.set(word, await translate(word, {
+      'from': 'en',
+      'to': 'ru'
+    }));
+  }
+  const translation = translateStore.get(word);
   const type = random(0, 1);
-  const question = type ? `Translate "${word.en}" to Russian: ` : `Translate "${word.ru}" to English: `;
+  const question = type ? `Translate "${word}" to Russian: ` : `Translate "${translation}" to English: `;
   const answer = await askQuestion(question);
 
-  const correctAnswer = type ? word.ru : word.en;
+  const correctAnswer = type ? translation : word;
   const isCorrect = answer === correctAnswer;
 
   if (isCorrect) {
