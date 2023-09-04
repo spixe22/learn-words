@@ -16,10 +16,12 @@ import readline from 'readline';
 import translate from "translate";
 
 import { random } from './utils.mjs';
+import { WordsPlayer } from './words-player.mjs';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 const rootDir = join(__dirname, '..');
 
+const wordsPlayer = new WordsPlayer();
 
 const loadWords = () => readFileSync(join(rootDir, 'words.txt'), 'utf8')
     .split('\n')
@@ -57,6 +59,9 @@ const quiz = async () => {
   const translation = translateStore.get(word);
   const type = random(0, 1);
   const question = type ? `Translate "${word}" to Russian: ` : `Translate "${translation}" to English: `;
+  if (type === 1) {
+    await wordsPlayer.play(word);
+  }
   const answer = await askQuestion(question);
 
   const correctAnswer = type ? translation : word;
@@ -85,4 +90,4 @@ const start = async () => {
     }
 }
 
-start();
+wordsPlayer.onInitialized(start);
